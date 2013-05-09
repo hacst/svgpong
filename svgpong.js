@@ -244,6 +244,17 @@ svgpong = function () {
         inputY = insvg.y;
     });
 
+    field.addEventListener("touchmove", function (event) {
+        event.preventDefault();
+
+        var p = field.createSVGPoint();
+        p.x = event.touches[0].clientX
+        p.y = event.touches[0].clientY
+        var insvg = p.matrixTransform(matrix);
+
+        inputY = insvg.y;
+    });
+
     window.onresize = function (event) {
         matrix = field.getScreenCTM().inverse();
     };
