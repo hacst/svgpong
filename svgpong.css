@@ -1,0 +1,23 @@
+﻿body {
+    margin: 0px;
+}
+
+#background {
+    fill: white;
+}
+
+#field {
+    left:0;
+    top:0;
+    width:100%;
+    height:100%;
+    position : absolute;
+    display: inline-block;
+    cursor: none;
+}
+
+.score {
+    font-family : Impact, Charcoal, sans-serif;
+    text-anchor: middle;
+    font-size : 30pt;
+}
