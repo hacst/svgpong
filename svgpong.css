@@ -2,10 +2,6 @@
     margin: 0px;
 }
 
-#background {
-    fill: white;
-}
-
 #field {
     left:0;
     top:0;
@@ -13,11 +9,18 @@
     height:100%;
     position : absolute;
     display: inline-block;
-    cursor: none;
+    background-color: white;
 }
 
 .score {
     font-family : Impact, Charcoal, sans-serif;
     text-anchor: middle;
     font-size : 30pt;
+}
+
+#paused {
+    font-family : Impact, Charcoal, sans-serif;
+    text-anchor: middle;
+    text-transform: uppercase;
+    font-size : 40pt;
 }

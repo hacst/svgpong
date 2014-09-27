@@ -1,4 +1,5 @@
-svgpong = function () {
+"use strict";
+var svgpong = function () {
     var field = document.getElementById('field');
     if (field === null) {
         alert("Couldn't find svg graphic");
@@ -12,7 +13,7 @@ svgpong = function () {
     })();
 
     // Wrap SVG elements for easier access
-
+    
     function wrapPaddle(name) {
         var e = document.getElementById(name)
         var r = {}
@@ -86,6 +87,13 @@ svgpong = function () {
     var playerScore= document.getElementById('playerScore')
     var computerScore = document.getElementById('computerScore')
 
+    var pausedText = document.getElementById('paused');
+    
+    pausedText.show = function() { this.style.display = 'initial'; };
+    pausedText.hide = function() { this.style.display = 'none'; };
+    pausedText.isHidden = function() { return this.style.display == 'none' };
+    
+
     var box = field.viewBox.baseVal;
 
     // Initial ball state vector init
@@ -117,6 +125,21 @@ svgpong = function () {
     var horCenter = box.width / 2;
     var deflectFactor = 0.1;
 
+    var paused = true; // Start paused
+    var pausedTextBlinkDelay = 600;
+    
+    var pausedTextBlinkTimer = pausedTextBlinkDelay;
+    
+    var pause = function () {
+        pausedTextBlinkTimer = pausedTextBlinkDelay;
+        paused = true;
+        pausedText.show();
+    }
+    var unpause = function() {
+        paused = false;
+        pausedText.hide();
+    }
+    
     function collideBallWith(what) {
         if (ball.bottom < what.top || ball.top > what.bottom) {
             // No collision
@@ -167,9 +190,70 @@ svgpong = function () {
         }, 3000);
     }
 
-    scored(); // Setup
+    field.addEventListener("dblclick", function (event) {
+        var isFullScreen = document.mozFullScreen || document.webkitIsFullScreen;
+        if (!isFullScreen) {
+            field.requestFullscreen();
+        }
+    });
+    
+    var supportsPointerLock = 'pointerLockElement' in document ||
+        'mozPointerLockElement' in document ||
+        'webkitPointerLockElement' in document;
+        
+    var hasPointerLock = function() {
+        var pointerLockElement = document.pointerLockElement ||
+            document.mozPointerLockElement ||
+            document.webkitPointerLockElement;
+            
+        return pointerLockElement === field;
+    }
+    
+    var pointerLockStateChanged = function (event) {
+        if (!hasPointerLock()) {
+            // Lost lock, pause
+            pause();
+        } else {
+            // Got lock, start
+            unpause();
+        }
+    }
+    
+    document.addEventListener('pointerlockchange', pointerLockStateChanged);
+    document.addEventListener('mozpointerlockchange', pointerLockStateChanged);
+    document.addEventListener('webkitpointerlockchange', pointerLockStateChanged);
+            
+    field.addEventListener("click", function (event) {
+        if (!paused) {
+            pause();
+        } else if (!supportsPointerLock || hasPointerLock()) {
+            // Don't unpause without pointerlock if it's supported.
+            // Firefox first asks the user before locking.
+            // Unpause on gaining the lock instead.
+            unpause();
+        }
+        
+        if (supportsPointerLock && !hasPointerLock()) {
+            field.requestPointerLock();
+        }
+    });
 
+    scored(); // Setup
+    
     var animate = function () {
+        if (paused) {
+            pausedTextBlinkTimer -= clock.reset();
+            if (pausedTextBlinkTimer <= 0) {
+                pausedTextBlinkTimer = pausedTextBlinkDelay;
+                if (pausedText.isHidden())
+                    pausedText.show();
+                else
+                    pausedText.hide();
+            }
+            requestAnimationFrame(animate);
+            return;
+        }
+        
         var suspense = field.suspendRedraw(6000);
 
         var anim_factor = clock.reset() * animSpeed
@@ -188,8 +272,6 @@ svgpong = function () {
             var offset = vertCenter - computer.cy;
             var motivation = Math.abs(offset) > vertCenter / 4 ? 0.5 : 0;
         }
-
-
 
         if (offset > 0) {
             computer.cy += computerSpeed * anim_factor * motivation;
@@ -235,17 +317,33 @@ svgpong = function () {
 
     field.addEventListener("mousemove", function (event) {
         event.preventDefault();
+        var movementY = event.movementY ||
+                        event.mozMovementY ||
+                        event.webkitMovementY ||
+                        0;
 
-        var p = field.createSVGPoint();
-        p.x = event.clientX;
-        p.y = event.clientY;
-        var insvg = p.matrixTransform(matrix);
-
-        inputY = insvg.y;
+        inputY += movementY;
     });
 
+    // Work around some incompatibilities
+    
+    field.requestFullscreen = field.requestFullscreen ||
+        field.msRequestFullscreen ||
+        field.mozRequestFullScreen ||
+        field.webkitRequestFullscreen;
+
+    field.requestPointerLock = field.requestPointerLock ||
+                     field.mozRequestPointerLock ||
+                     field.webkitRequestPointerLock;
+        
+    // Add touch support
     field.addEventListener("touchmove", function (event) {
         event.preventDefault();
+        
+        if (paused) {
+            // Nice touch for mobile.
+            unpause();
+        }
 
         var p = field.createSVGPoint();
         p.x = event.touches[0].clientX
@@ -255,6 +353,7 @@ svgpong = function () {
         inputY = insvg.y;
     });
 
+    // Handle resizes
     window.onresize = function (event) {
         matrix = field.getScreenCTM().inverse();
     };

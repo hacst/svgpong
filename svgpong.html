@@ -8,11 +8,11 @@
 </head>
 <body onload="svgpong()">
     <svg id="field" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid">
-        <rect id="background" width="800" height="600"></rect><!-- Workaround strange event behavior-->
 
         <text class="score" id="playerScore" x="200" y="50">0</text>
         <text class="score" x="400" y="50">-</text>
         <text class="score" id="computerScore" x="600" y="50">0</text>
+        <text id="paused" x="400" y="250">Paused</text>
 
         <rect id="paddleLeft" width="20" height="100" x="10" y="350"></rect>
         <rect id="paddleRight" width="20" height="100" x="770" y="350"></rect>
